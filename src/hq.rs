@@ -1,4 +1,4 @@
-use std::{io::Write, sync::Arc};
+use std::{io::Write, sync::Arc, thread, time::Duration};
 
 use anyhow::Result;
 use chrono::NaiveDateTime;
@@ -70,19 +70,21 @@ impl HQ {
         info!("Submitting form ...");
         self.tab.find_element("button#Save")?.click()?;
 
+        thread::sleep(Duration::from_millis(500));
+
         info!("Successfully logged work time!");
         Ok(())
     }
 
     #[allow(dead_code)]
-    fn take_debug_screenshot(&self) -> Result<()> {
+    pub fn take_debug_screenshot(&self, name: &str) -> Result<()> {
         let d = self.tab.capture_screenshot(
             headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::Png,
             None,
             None,
             true,
         )?;
-        let mut f = std::fs::File::create("screenshot.png")?;
+        let mut f = std::fs::File::create(name)?;
         f.write_all(d.as_slice())?;
 
         Ok(())

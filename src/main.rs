@@ -1,9 +1,12 @@
+mod commands;
 mod config;
 mod hq;
+mod util;
 
 use anyhow::Result;
 use chrono::{Duration, Local, NaiveDateTime, NaiveTime};
 use clap::Parser;
+use commands::Commands;
 use config::Config;
 use env_logger::Env;
 use hq::HQ;
@@ -68,6 +71,9 @@ struct Args {
     /// The log level
     #[arg(short, long, default_value = "info")]
     log_level: String,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
 }
 
 fn main() -> Result<()> {
@@ -88,13 +94,13 @@ fn main() -> Result<()> {
         .transpose()?
         .ok_or_else(|| anyhow::anyhow!("No start time has been specified."))?;
 
-    let time = args.time.as_ref().map(parse_duration).transpose()?;
+    let time = args.time.as_ref().map(util::parse_duration).transpose()?;
     let pause = args
         .pause
         .as_ref()
         .or(config.defaults.as_ref().and_then(|d| d.pause.as_ref()))
         .as_ref()
-        .map(parse_duration)
+        .map(util::parse_duration)
         .transpose()?;
 
     let end = time.map(|t| Ok(start + t)).unwrap_or_else(|| {
@@ -104,7 +110,7 @@ fn main() -> Result<()> {
             .map(|e| e - pause.unwrap_or(Duration::seconds(0)))
     })?;
 
-    if !args.yes {
+    if args.command.is_none() && !args.yes {
         let dur = end - start;
 
         let msg = format!(
@@ -130,9 +136,11 @@ fn main() -> Result<()> {
         (&config.session.key, &config.session.value),
     )?;
 
-    hq.log_worktime(start, end)?;
-
-    Ok(())
+    if let Some(cmd) = args.command {
+        cmd.run(&hq, &config)
+    } else {
+        hq.log_worktime(start, end)
+    }
 }
 
 fn parse_datetime<S: AsRef<str>>(dtstr: S) -> Result<NaiveDateTime> {
@@ -143,11 +151,6 @@ fn parse_datetime<S: AsRef<str>>(dtstr: S) -> Result<NaiveDateTime> {
         let now = Local::now();
         NaiveDateTime::new(now.date_naive(), NaiveTime::parse_from_str(dtstr, "%H:%M")?)
     })
-}
-
-fn parse_duration<S: AsRef<str>>(dstr: S) -> Result<Duration> {
-    let d = parse_duration::parse(dstr.as_ref())?;
-    Ok(Duration::from_std(d)?)
 }
 
 fn round_duration(d: std::time::Duration) -> std::time::Duration {

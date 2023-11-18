@@ -25,6 +25,12 @@ pub struct Defaults {
     #[serde(rename = "startTime")]
     pub start_time: Option<String>,
     pub pause: Option<String>,
+    pub csv: Option<Csv>,
+}
+
+#[derive(Deserialize)]
+pub struct Csv {
+    pub format: String,
 }
 
 impl Config {
