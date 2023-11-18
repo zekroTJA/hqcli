@@ -3,6 +3,7 @@
 *.json
 *.yaml
 *.toml
+!Cargo.toml
 
 *.csv
 *.png
