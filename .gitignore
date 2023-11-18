@@ -1,4 +1,8 @@
 /target
+
 *.json
 *.yaml
 *.toml
+
+*.csv
+*.png
