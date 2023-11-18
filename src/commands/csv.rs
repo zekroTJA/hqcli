@@ -133,7 +133,6 @@ impl Command for Csv {
         info!("Logging working times ...");
         for (i, entry) in entries.iter().enumerate() {
             info!("[{i:>3}] Logging entry ...");
-            hq.take_debug_screenshot(&format!("ss_{i}.png"))?;
             hq.log_worktime(entry.start, entry.end)?;
         }
 
